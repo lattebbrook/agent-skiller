@@ -6,8 +6,6 @@
 
 <h1 align="center"><code>agent-skiller</code></h1>
 
----
-
 <div align="center">
 
 <img src="https://img.shields.io/badge/mission-teach_your_AI_how_to_work-8b1e8f" alt="mission: teach your AI how to work" />
