@@ -1,0 +1,66 @@
+# Records each push to main as a GitHub deployment to the "testing" environment,
+# pointing at the public site. Vercel does the actual build; this waits for its
+# commit status and only then marks the deployment successful, so the GitHub
+# sidebar shows a truthful state and a clean URL.
+name: Deployment status
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  deployments: write
+  statuses: read
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Record the deployment and wait for Vercel
+        uses: actions/github-script@v7
+        env:
+          SITE_URL: https://agent-skiller.vercel.app
+          LOG_URL: https://vercel.com/tanawat/agent-skiller/deployments
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const sha = context.sha;
+            const environment_url = process.env.SITE_URL;
+            const log_url = process.env.LOG_URL;
+
+            const created = await github.rest.repos.createDeployment({
+              owner, repo, ref: sha,
+              environment: 'testing',
+              description: 'Static build on Vercel',
+              auto_merge: false,
+              required_contexts: [],
+              transient_environment: false,
+              production_environment: false,
+            });
+            const deployment_id = created.data.id;
+            const setState = (state, description) =>
+              github.rest.repos.createDeploymentStatus({ owner, repo, deployment_id, state, environment_url, log_url, description, auto_inactive: true });
+
+            await setState('in_progress', 'Waiting for Vercel to build this commit');
+
+            // Vercel reports its build through a commit status. Poll it for up to ten minutes.
+            const deadline = Date.now() + 10 * 60 * 1000;
+            let verdict = 'pending';
+            while (Date.now() < deadline) {
+              const { data } = await github.rest.repos.getCombinedStatusForRef({ owner, repo, ref: sha });
+              const vercel = data.statuses.find((s) => /vercel/i.test(s.context));
+              if (vercel && vercel.state !== 'pending') { verdict = vercel.state; break; }
+              await new Promise((r) => setTimeout(r, 15000));
+            }
+
+            if (verdict === 'success') {
+              await setState('success', 'Live on Vercel');
+            } else if (verdict === 'pending') {
+              await setState('error', 'Vercel did not report a result within ten minutes');
+              core.setFailed('Vercel did not report a build result in time.');
+            } else {
+              await setState('failure', `Vercel reported ${verdict}`);
+              core.setFailed(`Vercel reported ${verdict}.`);
+            }
