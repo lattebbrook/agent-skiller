@@ -17,6 +17,7 @@ export function Palette({ onAdd, onAddNote, hasStart }: { onAdd: (entry: Palette
   const collapsed = new Set(prefs.paletteCollapsed);
   const toggle = (id: string) => setPrefs({ paletteCollapsed: collapsed.has(id) ? prefs.paletteCollapsed.filter((item) => item !== id) : [...prefs.paletteCollapsed, id] });
   const iconSize = compact ? 16 : 18;
+  const notesOpen = !collapsed.has('notes');
 
   return (
     <div className={`palette tree density-${prefs.paletteDensity}`}>
@@ -74,29 +75,32 @@ export function Palette({ onAdd, onAddNote, hasStart }: { onAdd: (entry: Palette
       })}
 
       <div>
-        <div className="tree-row palette-folder static" style={{ paddingLeft: 6 }} title="For the people reading the file.">
-          <span style={{ width: 13 }} />
+        <button type="button" className="tree-row palette-folder" style={{ paddingLeft: 6 }} onClick={() => toggle('notes')} aria-expanded={notesOpen} title="For the people reading the file.">
+          {notesOpen ? <ChevronDown size={13} className="chev" /> : <ChevronRight size={13} className="chev" />}
           <span className="flex-1 truncate">Notes</span>
-        </div>
-        <button
-          type="button"
-          className="tree-row palette-item"
-          style={{ paddingLeft: 6 + 14 }}
-          draggable
-          title="A sticky note for humans reading the skill (N). Eight colours."
-          onDragStart={(event) => {
-            event.dataTransfer.setData(DRAG_MIME, 'note');
-            event.dataTransfer.effectAllowed = 'copy';
-          }}
-          onClick={onAddNote}
-        >
-          <span style={{ width: 12 }} />
-          <span className="node-icon note-icon" style={{ width: iconSize, height: iconSize, borderRadius: Math.round(iconSize * 0.29) }}>
-            <NoteIcon size={Math.round(iconSize * 0.6)} strokeWidth={2} />
-          </span>
-          <span className="palette-item-name">Note</span>
-          {!compact && <span className="palette-item-desc truncate">Sticky note, exported as a quote.</span>}
+          {!notesOpen && <span className="palette-group-count">1</span>}
         </button>
+        {notesOpen && (
+          <button
+            type="button"
+            className="tree-row palette-item"
+            style={{ paddingLeft: 6 + 14 }}
+            draggable
+            title="A sticky note for humans reading the skill (N). Eight colours."
+            onDragStart={(event) => {
+              event.dataTransfer.setData(DRAG_MIME, 'note');
+              event.dataTransfer.effectAllowed = 'copy';
+            }}
+            onClick={onAddNote}
+          >
+            <span style={{ width: 12 }} />
+            <span className="node-icon note-icon" style={{ width: iconSize, height: iconSize, borderRadius: Math.round(iconSize * 0.29) }}>
+              <NoteIcon size={Math.round(iconSize * 0.6)} strokeWidth={2} />
+            </span>
+            <span className="palette-item-name">Note</span>
+            {!compact && <span className="palette-item-desc truncate">Sticky note, exported as a quote.</span>}
+          </button>
+        )}
       </div>
     </div>
   );
