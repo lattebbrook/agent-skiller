@@ -25,6 +25,10 @@
   <a href="https://agent-skiller.vercel.app">Try it live</a> · <a href="#run-it">Run it</a> · <a href="#the-format">The format</a> · <a href="#connect-an-agent">Connect an agent</a>
 </p>
 
+<p align="center">
+  <strong>English</strong> · <a href="README.zh-CN.md">中文</a> · <a href="README.th.md">ไทย</a>
+</p>
+
 <br/>
 
 ![The canvas: a file-triage skill with a Switch branching into four cases](assets/canvas.jpg)
