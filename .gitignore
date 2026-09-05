@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+workspace/*
+!workspace/.gitkeep
+.skiller/
+__pycache__/
+coverage/

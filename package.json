@@ -1,0 +1,30 @@
+{
+  "name": "agent-skiller",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Lightweight node editor that outputs reusable Markdown skills for AI agents.",
+  "workspaces": [
+    "packages/core",
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm-run-all --parallel --race dev:server dev:web",
+    "dev:server": "npm run dev -w server",
+    "dev:web": "npm run dev -w web",
+    "build": "npm run build -w @agent-skiller/core && npm run build -w server && npm run build -w web",
+    "start": "npm run start -w server",
+    "test": "npm run test -w @agent-skiller/core && npm run test -w server && npm run test -w web",
+    "typecheck": "npm run typecheck -w @agent-skiller/core && npm run typecheck -w server && npm run typecheck -w web",
+    "fmt": "node packages/core/dist/cli.js fmt",
+    "build:static": "npm run build -w @agent-skiller/core && npm run build -w web"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
