@@ -637,11 +637,36 @@ textarea.field {
 }
 
 .sidebar {
+  position: relative;
   width: 264px;
   background: var(--panel);
   border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
+}
+.sidebar.resizing {
+  user-select: none;
+}
+.sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 5;
+}
+.sidebar-resizer::after {
+  content: '';
+  position: absolute;
+  inset: 0 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.sidebar-resizer:hover::after,
+.sidebar.resizing .sidebar-resizer::after {
+  opacity: 0.7;
 }
 .sidebar-head {
   padding: 10px 10px 8px;

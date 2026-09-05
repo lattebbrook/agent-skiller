@@ -5,6 +5,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Code2, Download, FolderTree, HelpCircle, PanelLeft, PlayCircle, Puzzle, Settings, Waypoints } from 'lucide-react';
+import { SIDEBAR_DEFAULT, SIDEBAR_MAX, SIDEBAR_MIN, useCanvasPrefs } from './canvas/prefs.js';
 import type { PaletteEntry } from '@agent-skiller/core';
 import { Canvas, type CanvasApi } from './canvas/Canvas.js';
 import { NodeDrawer } from './drawer/NodeDrawer.js';
@@ -53,6 +54,32 @@ export function App() {
   const [view, setView] = useState<MainView>('canvas');
   const [sideTab, setSideTab] = useState<SideTab>('workspace');
   const [sideOpen, setSideOpen] = useState(true);
+  const [prefs, setPrefs] = useCanvasPrefs();
+  const [dragWidth, setDragWidth] = useState<number | null>(null);
+  const sidebarWidth = dragWidth ?? prefs.sidebarWidth;
+
+  /** Drag the sidebar's edge to resize; drag it well past the minimum to collapse. */
+  const startSidebarDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = prefs.sidebarWidth;
+    let latest = startWidth;
+    const move = (ev: PointerEvent) => {
+      latest = startWidth + (ev.clientX - startX);
+      setDragWidth(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, latest)));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      document.body.style.cursor = '';
+      setDragWidth(null);
+      if (latest < SIDEBAR_MIN - 60) setSideOpen(false);
+      else setPrefs({ sidebarWidth: Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, Math.round(latest))) });
+    };
+    document.body.style.cursor = 'col-resize';
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -292,7 +319,7 @@ export function App() {
 
       <div className="flex-1 flex min-h-0">
         {sideOpen && (
-          <aside className="sidebar shrink-0">
+          <aside className={`sidebar shrink-0${dragWidth !== null ? ' resizing' : ''}`} style={{ width: sidebarWidth }}>
             <div className="sidebar-head">
               <div className="segmented stretch">
                 <button className={sideTab === 'workspace' ? 'active' : ''} onClick={() => setSideTab('workspace')}>
@@ -316,6 +343,15 @@ export function App() {
                 </p>
               )}
             </div>
+            <div
+              className="sidebar-resizer"
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize sidebar"
+              title="Drag to resize. Double-click to reset. Drag left to collapse."
+              onPointerDown={startSidebarDrag}
+              onDoubleClick={() => setPrefs({ sidebarWidth: SIDEBAR_DEFAULT })}
+            />
           </aside>
         )}
 

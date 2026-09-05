@@ -13,11 +13,17 @@ export interface CanvasPrefs {
   paletteDensity: PaletteDensity;
   /** Group ids the person folded shut in the palette. */
   paletteCollapsed: string[];
+  /** Sidebar width in px, dragged from its right edge. */
+  sidebarWidth: number;
 }
+
+export const SIDEBAR_MIN = 200;
+export const SIDEBAR_MAX = 560;
+export const SIDEBAR_DEFAULT = 264;
 
 const STORAGE_KEY = 'skiller.canvasPrefs';
 const EVENT = 'skiller:canvas-prefs';
-const DEFAULTS: CanvasPrefs = { edgeStyle: 'curved', paletteDensity: 'normal', paletteCollapsed: [] };
+const DEFAULTS: CanvasPrefs = { edgeStyle: 'curved', paletteDensity: 'normal', paletteCollapsed: [], sidebarWidth: SIDEBAR_DEFAULT };
 
 export function readCanvasPrefs(): CanvasPrefs {
   try {
@@ -26,6 +32,7 @@ export function readCanvasPrefs(): CanvasPrefs {
       edgeStyle: parsed.edgeStyle === 'orthogonal' ? 'orthogonal' : 'curved',
       paletteDensity: parsed.paletteDensity === 'compact' ? 'compact' : 'normal',
       paletteCollapsed: Array.isArray(parsed.paletteCollapsed) ? parsed.paletteCollapsed.filter((id): id is string => typeof id === 'string') : [],
+      sidebarWidth: typeof parsed.sidebarWidth === 'number' && Number.isFinite(parsed.sidebarWidth) ? Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, Math.round(parsed.sidebarWidth))) : SIDEBAR_DEFAULT,
     };
   } catch {
     return { ...DEFAULTS };
