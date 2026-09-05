@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 export type EdgeStyle = 'curved' | 'orthogonal';
-export type PaletteDensity = 'relax' | 'normal' | 'compact';
+export type PaletteDensity = 'normal' | 'compact';
 
 export interface CanvasPrefs {
   edgeStyle: EdgeStyle;
@@ -24,7 +24,7 @@ export function readCanvasPrefs(): CanvasPrefs {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Partial<CanvasPrefs>;
     return {
       edgeStyle: parsed.edgeStyle === 'orthogonal' ? 'orthogonal' : 'curved',
-      paletteDensity: parsed.paletteDensity === 'relax' || parsed.paletteDensity === 'compact' ? parsed.paletteDensity : 'normal',
+      paletteDensity: parsed.paletteDensity === 'compact' ? 'compact' : 'normal',
       paletteCollapsed: Array.isArray(parsed.paletteCollapsed) ? parsed.paletteCollapsed.filter((id): id is string => typeof id === 'string') : [],
     };
   } catch {

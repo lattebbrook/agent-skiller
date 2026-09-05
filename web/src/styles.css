@@ -1212,84 +1212,66 @@ textarea.field {
 }
 
 /* ---------------------------------------------------------------- palette */
-.palette {
-  padding: 4px 6px 10px;
+/* Same rows as the workspace explorer: folder rows for groups, file-like rows for kinds. */
+.palette.tree {
+  padding: 2px 6px 8px;
 }
-.palette-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 4px 8px;
-}
-.segmented.tiny {
-  padding: 2px;
-  gap: 1px;
-  border-radius: 7px;
-  flex-shrink: 0;
-}
-.segmented.tiny > button {
-  height: 22px;
-  padding: 0 6px;
-  border-radius: 5px;
-}
-.palette-group {
-  margin-bottom: 2px;
-}
-.palette-group-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.palette button.tree-row {
   width: 100%;
-  padding: 6px 6px;
-  border-radius: 7px;
-  color: var(--muted);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
   text-align: left;
+  cursor: pointer;
 }
-.palette-group-head:not(.static):hover {
+.palette button.tree-row:hover {
   background: var(--panel-2);
 }
-.palette-group-title {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text);
+.palette button.tree-row:focus-visible {
+  outline: 1.5px solid var(--accent);
+  outline-offset: -1.5px;
 }
-.palette-group-desc {
+.palette-folder {
+  font-weight: 600;
+  user-select: none;
+}
+.palette-folder.static {
+  cursor: default;
+}
+.palette-folder.static:hover {
+  background: transparent;
+}
+.palette-item {
+  cursor: grab;
+}
+.palette button.palette-item:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.palette button.palette-item:disabled:hover {
+  background: transparent;
+}
+.palette-item-name {
+  flex-shrink: 0;
+}
+.palette-item-desc {
+  flex: 1;
+  min-width: 0;
   font-size: 11px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  color: var(--muted);
+}
+.palette.density-compact .tree-row {
+  height: 24px;
+  font-size: 12px;
 }
 .palette-group-count {
-  margin-left: auto;
   font-size: 10.5px;
   padding: 0 6px;
   border-radius: 999px;
   background: var(--panel-2);
-}
-.palette .card-list {
-  padding: 0 0 6px;
-  gap: 2px;
-}
-.palette.density-compact .card {
-  padding: 3px 6px;
-  gap: 8px;
-  border-radius: 6px;
-}
-.palette.density-compact .card .card-title {
-  font-size: 12px;
-}
-.palette.density-normal .card {
-  padding: 5px 8px;
-}
-.palette.density-relax .card {
-  padding: 9px 10px;
-  gap: 12px;
-}
-.palette.density-relax .card .card-desc {
-  white-space: normal;
+  color: var(--muted);
+  font-weight: 500;
 }
 
 /* ------------------------------------------------------------- note colours */
