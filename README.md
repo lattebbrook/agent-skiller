@@ -1,24 +1,40 @@
-<p align="center">
+<div align="center">
   <img src="assets/banner.png" alt="Agent Skiller — Teach your AI how to work, visually." width="100%" />
+</div>
+
+<br/>
+
+<h1 align="center"><code>agent-skiller</code></h1>
+
+---
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/mission-teach_your_AI_how_to_work-8b1e8f" alt="mission: teach your AI how to work" />
+<img src="https://img.shields.io/github/languages/top/lattebbrook/agent-skiller?color=3178c6" alt="TypeScript" />
+<img src="https://img.shields.io/github/last-commit/lattebbrook/agent-skiller?label=last%20commit&color=2ea45c" alt="last commit" />
+<img src="https://img.shields.io/badge/License-Apache--2.0-2ea45c" alt="License Apache-2.0" />
+<a href="https://agent-skiller.vercel.app"><img src="https://img.shields.io/badge/Live-agent--skiller.vercel.app-0060f5?logo=vercel&logoColor=white" alt="Live" /></a>
+<img src="https://img.shields.io/badge/MCP-HTTP_%2B_stdio-8b5cf6" alt="MCP" />
+
+</div>
+
+<p align="center">
+  <code>agent-skiller</code> is an open-source visual builder for skills an AI agent can follow, step by step.
 </p>
 
 <p align="center">
-  <a href="https://agent-skiller.vercel.app"><img src="https://img.shields.io/badge/Live-agent--skiller.vercel.app-0060f5?logo=vercel&logoColor=white" alt="Live" /></a>
-  <img src="https://img.shields.io/badge/React_Flow-12-FF0072" alt="React Flow 12" />
-  <img src="https://img.shields.io/badge/MCP-HTTP_%2B_stdio-8b5cf6" alt="MCP" />
-  <img src="https://img.shields.io/badge/Node.js-22.5%2B-339933?logo=nodedotjs&logoColor=white" alt="Node.js 22.5+" />
-  <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Apache 2.0" />
+  <a href="https://agent-skiller.vercel.app">Try it live</a> · <a href="#run-it">Run it</a> · <a href="#the-format">The format</a> · <a href="#connect-an-agent">Connect an agent</a>
 </p>
 
-AgentSkiller is a lightweight node editor whose output is a **skill**: one Markdown file an
-AI agent reads and follows step by step. Draw the steps, branches and loops on a canvas;
-export a file a person can read and edit by hand; let an agent pick it up over MCP and walk
-it one step at a time instead of planning the whole job from scratch.
-
-**Try it at [agent-skiller.vercel.app](https://agent-skiller.vercel.app).** Skills stay in your
-browser; nothing is uploaded.
+<br/>
 
 ![The canvas: a file-triage skill with a Switch branching into four cases](assets/canvas.jpg)
+
+Draw the steps, branches and loops on a canvas; export one Markdown file a person can read
+and edit by hand; let an agent pick it up over MCP and walk it one step at a time instead of
+planning the whole job from scratch. Skills stay in your browser on the live site; nothing is
+uploaded.
 
 ## What makes it different
 
