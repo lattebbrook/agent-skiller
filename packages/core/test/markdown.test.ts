@@ -63,7 +63,7 @@ describe('parse details', () => {
     expect(node(5).config).toEqual({ language: 'python' });
   });
   it('reads notes and layout', () => {
-    expect(skill.notes).toEqual([{ id: 'n1', text: 'Some clients show unread as a blue dot rather than bold text.', attachedTo: 3 }]);
+    expect(skill.notes).toEqual([{ id: 'n1', text: 'Some clients show unread as a blue dot rather than bold text.', attachedTo: 3, color: '' }]);
     expect(skill.layout['4']).toEqual({ x: 780, y: -90 });
     expect(skill.layout['n1']).toEqual({ x: 520, y: 90 });
   });

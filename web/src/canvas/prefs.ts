@@ -6,19 +6,27 @@
 import { useCallback, useEffect, useState } from 'react';
 
 export type EdgeStyle = 'curved' | 'orthogonal';
+export type PaletteDensity = 'relax' | 'normal' | 'compact';
 
 export interface CanvasPrefs {
   edgeStyle: EdgeStyle;
+  paletteDensity: PaletteDensity;
+  /** Group ids the person folded shut in the palette. */
+  paletteCollapsed: string[];
 }
 
 const STORAGE_KEY = 'skiller.canvasPrefs';
 const EVENT = 'skiller:canvas-prefs';
-const DEFAULTS: CanvasPrefs = { edgeStyle: 'curved' };
+const DEFAULTS: CanvasPrefs = { edgeStyle: 'curved', paletteDensity: 'normal', paletteCollapsed: [] };
 
 export function readCanvasPrefs(): CanvasPrefs {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Partial<CanvasPrefs>;
-    return { edgeStyle: parsed.edgeStyle === 'orthogonal' ? 'orthogonal' : 'curved' };
+    return {
+      edgeStyle: parsed.edgeStyle === 'orthogonal' ? 'orthogonal' : 'curved',
+      paletteDensity: parsed.paletteDensity === 'relax' || parsed.paletteDensity === 'compact' ? parsed.paletteDensity : 'normal',
+      paletteCollapsed: Array.isArray(parsed.paletteCollapsed) ? parsed.paletteCollapsed.filter((id): id is string => typeof id === 'string') : [],
+    };
   } catch {
     return { ...DEFAULTS };
   }

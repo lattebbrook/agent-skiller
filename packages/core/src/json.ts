@@ -3,7 +3,7 @@
  * it fills defaults and drops unknown fields so an older or hand-made file
  * still opens.
  */
-import { SKILL_FORMAT, prettifyName, slugify, type ConfigValue, type Skill, type SkillNode } from './model.js';
+import { NOTE_COLORS, SKILL_FORMAT, prettifyName, slugify, type ConfigValue, type NoteColor, type Skill, type SkillNode } from './model.js';
 import { NODE_TYPES } from './model.js';
 import { normalizeRefs } from './refs.js';
 import type { Diagnostic } from './markdown.js';
@@ -49,10 +49,12 @@ export function fromJson(text: string): { skill: Skill; diagnostics: Diagnostic[
   const notes = Array.isArray(data['notes'])
     ? (data['notes'] as unknown[]).map((item, index) => {
         const note = item as Record<string, unknown>;
+        const color: NoteColor | '' = typeof note['color'] === 'string' && (NOTE_COLORS as readonly string[]).includes(note['color']) ? (note['color'] as NoteColor) : '';
         return {
           id: typeof note['id'] === 'string' ? note['id'] : `n${index + 1}`,
           text: typeof note['text'] === 'string' ? note['text'] : '',
           attachedTo: typeof note['attachedTo'] === 'number' && ids.has(note['attachedTo']) ? note['attachedTo'] : null,
+          color,
         };
       })
     : [];

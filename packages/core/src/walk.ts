@@ -139,10 +139,13 @@ function chooseHandle(node: SkillNode, event: StepEvent): string | null {
   }
   switch (node.type) {
     case 'if':
+    case 'confirm':
       return event.status === 'ok' ? 'yes' : 'no';
     case 'switch':
       return 'default';
     case 'code':
+    case 'command':
+    case 'request':
       return event.status === 'ok' ? 'next' : 'fail';
     default:
       return handles[0] ?? null;
@@ -193,10 +196,10 @@ function stringify(value: unknown): string {
 export function viewStep(skill: Skill, node: SkillNode, state: RunState): StepView {
   const config: Record<string, string | string[]> = {};
   for (const [key, value] of Object.entries(node.config)) {
-    if (key === 'cases' || key === 'language') continue;
+    if (key === 'cases' || key === 'language' || key === 'shell') continue;
     config[key] = Array.isArray(value) ? value.map((item) => substitute(item, state, skill)) : substitute(value, state, skill);
   }
-  const choices = node.type === 'if' || node.type === 'switch' ? outputHandles(node).map((handle) => (handle.id.startsWith('case:') ? handle.id.slice(5) : handle.id)) : [];
+  const choices = node.type === 'if' || node.type === 'switch' || node.type === 'confirm' ? outputHandles(node).map((handle) => (handle.id.startsWith('case:') ? handle.id.slice(5) : handle.id)) : [];
   const view: StepView = {
     nodeId: node.id,
     type: node.type,
@@ -220,6 +223,18 @@ function hintFor(node: SkillNode): string {
       return 'Do this, then report ok (with what you produced as output) or fail.';
     case 'ask':
       return 'Ask the user this. Report their answer as output.';
+    case 'confirm':
+      return 'Show the user exactly what will happen and wait for their answer. Report choose: "yes" or "no". Never proceed on "yes" without their explicit reply.';
+    case 'text':
+      return 'Produce this text with the references filled in. Check its format and correctness before continuing, then report the final text as output.';
+    case 'command':
+      return 'Run this command in your terminal. Report ok with its output, or fail with the error.';
+    case 'web':
+      return 'Open the URL in the browser and do what the instruction says. Report what you found as output.';
+    case 'file':
+      return 'Do this to the file at the path shown. Report ok, with the contents if you read it.';
+    case 'request':
+      return 'Make this HTTP request. Report ok with the parts of the response the instruction asks for, or fail with the status and error.';
     case 'if':
       return 'Answer the question. Report choose: "yes" or "no".';
     case 'switch':

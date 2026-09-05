@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createEmptySkill, parseMarkdown, validateSkill } from '@agent-skiller/core';
-import { addNode, connect, copyItems, disconnect, pasteItems, removeItems, updateNode, upstreamNodes } from './skillOps.js';
+import { addNode, addNote, connect, copyItems, disconnect, pasteItems, removeItems, updateNode, updateNote, upstreamNodes } from './skillOps.js';
 
 function linear() {
   return parseMarkdown(`# T\n\n## 1. Start\n- next: 2\n\n## 2. Do: A\nUse \${input}.\n- next: 3\n\n## 3. Do: B\nUse \${2: A}.\n- next: 4\n\n## 4. End\n`).skill;
@@ -63,6 +63,14 @@ describe('skillOps', () => {
   it('renaming a node rewrites the label of every reference to it', () => {
     const skill = updateNode(linear(), 2, { name: 'Opened the app' });
     expect(skill.nodes.find((node) => node.id === 3)!.body).toBe('Use ${2: Opened the app}.');
+  });
+
+  it('notes start in the default colour and keep a chosen one through paste', () => {
+    const withNote = addNote(linear(), { x: 5, y: 5 });
+    expect(withNote.skill.notes[0]!.color).toBe('');
+    const coloured = updateNote(withNote.skill, withNote.id, { color: 'blue' });
+    const pasted = pasteItems(coloured, copyItems(coloured, [withNote.id]));
+    expect(pasted.skill.notes[1]!.color).toBe('blue');
   });
 
   it('lists upstream nodes for the reference chips', () => {

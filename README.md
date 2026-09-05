@@ -112,9 +112,12 @@ Tell the user there are no unread messages.
 Tell the user, in at most five lines, what is new.
 ```
 
-A `##` heading is a step, `- next: 3` is an arrow, everything else is the instruction. Ten
-kinds of step: Start, Do, Ask, If, Switch, Loop, Code, Skill, Error, End. `examples/` has
-complete files; they double as parser fixtures.
+A `##` heading is a step, `- next: 3` is an arrow, everything else is the instruction. Sixteen
+kinds of step in five groups: Flow (Start, End, Error), Steps (Do, Ask, Confirm, Text), Logic
+(If, Switch, Loop), Tools (Command, Code, Web, File, Request) and Reuse (Skill), plus sticky
+notes in eight colours. Command and Code carry a caution: they act on the machine the agent
+controls, and AgentSkiller does not check or limit what they do, so put a Confirm before
+anything destructive. `examples/` has complete files; they double as parser fixtures.
 
 ## Connect an agent
 

@@ -5,9 +5,25 @@
 
 export const SKILL_FORMAT = 'agent-skiller/1' as const;
 
-export type NodeType = 'start' | 'do' | 'ask' | 'if' | 'switch' | 'loop' | 'code' | 'skill' | 'error' | 'end';
+export type NodeType =
+  | 'start'
+  | 'do'
+  | 'ask'
+  | 'confirm'
+  | 'text'
+  | 'if'
+  | 'switch'
+  | 'loop'
+  | 'command'
+  | 'code'
+  | 'web'
+  | 'file'
+  | 'request'
+  | 'skill'
+  | 'error'
+  | 'end';
 
-export const NODE_TYPES: readonly NodeType[] = ['start', 'do', 'ask', 'if', 'switch', 'loop', 'code', 'skill', 'error', 'end'];
+export const NODE_TYPES: readonly NodeType[] = ['start', 'do', 'ask', 'confirm', 'text', 'if', 'switch', 'loop', 'command', 'code', 'web', 'file', 'request', 'skill', 'error', 'end'];
 
 /** A config value is a single line or a list of lines. */
 export type ConfigValue = string | string[];
@@ -37,10 +53,16 @@ export interface Edge {
   to: number;
 }
 
+/** Sticky-note colours a person can pick from. The first is the default and is not written to the file. */
+export const NOTE_COLORS = ['yellow', 'blue', 'green', 'pink', 'purple', 'orange', 'red', 'gray'] as const;
+export type NoteColor = (typeof NOTE_COLORS)[number];
+
 export interface Note {
   id: string;
   text: string;
   attachedTo: number | null;
+  /** One of NOTE_COLORS; '' means the default. */
+  color: NoteColor | '';
 }
 
 export interface Position {

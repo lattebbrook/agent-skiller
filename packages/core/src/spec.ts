@@ -4,18 +4,23 @@
  * catalogue, so it cannot drift from what the parser accepts.
  */
 import { SKILL_FORMAT } from './model.js';
-import { NODE_META, PALETTE } from './nodeTypes.js';
+import { NODE_GROUPS, NODE_META, PALETTE, TEXT_CHECK_RULE } from './nodeTypes.js';
 
 export function formatGuide(): string {
-  const kinds = PALETTE.map((entry) => {
-    const meta = NODE_META[entry.type];
-    const outs = meta.outputs.map((handle) => `- ${handle.id}: <id>`).join('  ');
-    const settings = meta.fields.filter((field) => field.key !== 'language').map((field) => `- ${field.key}: …`).join('  ');
-    const arrows = entry.type === 'switch' ? '- case <label>: <id>  - default: <id>' : outs || '(none: this node ends the skill)';
-    return `- **${meta.keyword}** — ${meta.description}
+  const kinds = NODE_GROUPS.map((group) => {
+    const rows = PALETTE.filter((entry) => entry.group === group.id).map((entry) => {
+      const meta = NODE_META[entry.type];
+      const outs = meta.outputs.map((handle) => `- ${handle.id}: <id>`).join('  ');
+      const settings = meta.fields.filter((field) => !(meta.fence && (field.key === 'language' || field.key === 'shell')) && !field.locked).map((field) => `- ${field.key}: …`).join('  ');
+      const arrows = entry.type === 'switch' ? '- case <label>: <id>  - default: <id>' : outs || '(none: this node ends the skill)';
+      const body = !meta.hasBody ? 'none' : meta.fence ? `a \`\`\`${meta.fence} fenced block` : meta.bodyLabel.toLowerCase();
+      return `- **${meta.keyword}** — ${meta.description}
   Heading: \`## <id>. ${meta.keyword}: ${meta.namePlaceholder}\`
-  Arrows: ${arrows}${settings ? `\n  Settings: ${settings}` : ''}${meta.hasBody ? `\n  Body: ${meta.bodyLabel.toLowerCase()}` : '\n  Body: none'}`;
-  }).join('\n');
+  Arrows: ${arrows}${settings ? `\n  Settings: ${settings}` : ''}
+  Body: ${body}`;
+    });
+    return `${group.label}: ${group.description}\n${rows.join('\n')}`;
+  }).join('\n\n');
 
   return `You are writing an AgentSkiller skill: one Markdown file that an AI agent reads and
 follows step by step. Write it so a person can read it too. Rules:
@@ -49,7 +54,10 @@ ${kinds}
 
 A Code node holds a fenced \`\`\`python or \`\`\`javascript block. The script reads
 \`{"input": …, "steps": {"2": …}}\` from stdin and prints its result. Standard
-library only, no network, 10 seconds.
+library only, no network, 10 seconds. A Command node holds a fenced \`\`\`sh block
+the agent runs in its own terminal. Every Text node carries the fixed line
+\`- check: ${TEXT_CHECK_RULE}\`; write it as shown. Put a Confirm node before any
+Command or File step that deletes, overwrites or sends something.
 
 Do not invent settings, node kinds or arrow names that are not listed above.
 Prefer plain Do steps: the agent is capable, and the skill exists to save it

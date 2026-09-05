@@ -136,7 +136,7 @@ export function addNote(skill: Skill, position: Position, attachedTo: number | n
   let counter = next.notes.length + 1;
   while (next.notes.some((note) => note.id === `n${counter}`)) counter += 1;
   const id = `n${counter}`;
-  next.notes.push({ id, text, attachedTo });
+  next.notes.push({ id, text, attachedTo, color: '' });
   next.layout[id] = { x: Math.round(position.x), y: Math.round(position.y) };
   return { skill: next, id };
 }
@@ -200,7 +200,7 @@ export function pasteItems(skill: Skill, clip: Clip, at?: Position): { skill: Sk
     const id = `n${noteCounter}`;
     noteCounter += 1;
     const attachedTo = note.attachedTo !== null ? (idMap.get(note.attachedTo) ?? null) : null;
-    next.notes.push({ id, text: note.text, attachedTo });
+    next.notes.push({ id, text: note.text, attachedTo, color: note.color });
     const pos = clip.layout[note.id] ?? { x: 0, y: 0 };
     next.layout[id] = { x: pos.x + offset.x, y: pos.y + offset.y };
     ids.push(id);

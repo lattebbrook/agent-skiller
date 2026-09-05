@@ -66,12 +66,15 @@ export function validateSkill(skill: Skill): Problem[] {
           push('error', 'start-unconnected', 'Start must lead somewhere.', node.id);
           break;
         case 'if':
+        case 'confirm':
           push('error', 'branch-unconnected', `The "${handle.label}" branch goes nowhere. Connect it or end it with an End node.`, node.id);
           break;
         case 'switch':
           push(handle.id === 'default' ? 'warning' : 'error', 'branch-unconnected', `The "${handle.label}" case goes nowhere.`, node.id);
           break;
         case 'code':
+        case 'command':
+        case 'request':
           if (handle.id === 'next') push('warning', 'ends-silently', 'Nothing follows this step; the skill ends here without an End node.', node.id);
           break;
         default:
@@ -83,9 +86,13 @@ export function validateSkill(skill: Skill): Problem[] {
       const language = String(node.config['language'] ?? 'python');
       if (!['python', 'javascript'].includes(language)) push('error', 'code-language', `Unsupported language "${language}". Use python or javascript.`, node.id);
     }
+    if (node.type === 'command' && !node.body.trim()) push('error', 'command-empty', 'This Command node has no command.', node.id);
+    if (node.type === 'text' && !node.body.trim()) push('error', 'text-empty', 'This Text node has no text to check.', node.id);
+    if (node.type === 'request' && !String(node.config['url'] ?? '').trim()) push('warning', 'request-no-url', 'This Request has no URL.', node.id);
+    if (node.type === 'web' && !String(node.config['url'] ?? '').trim()) push('warning', 'web-no-url', 'This Web step has no URL; the agent will have to find the page itself.', node.id);
     if (node.type === 'switch' && asList(node.config['cases']).length === 0) push('warning', 'switch-no-cases', 'This Switch has no cases yet. Add one per possible answer.', node.id);
     if (node.type === 'skill' && !node.name.trim()) push('error', 'skill-no-target', 'Name the skill to run.', node.id);
-    if (meta.hasBody && !node.body.trim() && (node.type === 'do' || node.type === 'ask' || node.type === 'loop' || node.type === 'end' || node.type === 'error')) {
+    if (meta.hasBody && !node.body.trim() && (node.type === 'do' || node.type === 'ask' || node.type === 'confirm' || node.type === 'loop' || node.type === 'end' || node.type === 'error' || node.type === 'web' || node.type === 'file')) {
       push('warning', 'empty-body', 'This node has no instruction text.', node.id);
     }
 

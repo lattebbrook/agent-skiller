@@ -22,6 +22,7 @@ export interface NoteNodeData extends Record<string, unknown> {
   noteId: string;
   text: string;
   attachedTo: number | null;
+  color: string;
 }
 
 export type SkillFlowNode = FlowNode<SkillNodeData, 'skill'>;
@@ -57,7 +58,7 @@ export function toFlowNodes(skill: Skill, problems: Problem[], selected: string[
       type: 'note',
       position: skill.layout[note.id] ?? { x: 0, y: 0 },
       selected: selectedSet.has(note.id),
-      data: { noteId: note.id, text: note.text, attachedTo: note.attachedTo },
+      data: { noteId: note.id, text: note.text, attachedTo: note.attachedTo, color: note.color },
     });
   }
   return nodes;
@@ -70,6 +71,10 @@ function previewFor(node: Skill['nodes'][number]): string {
     return list.length ? `when: ${list[0]}${list.length > 1 ? ` +${list.length - 1}` : ''}` : 'manual';
   }
   if (node.type === 'code') return `${String(node.config['language'] ?? 'python')} · ${node.body.split('\n').length} lines`;
+  if (node.type === 'command') return `$ ${node.body.split('\n')[0] ?? ''}${node.body.includes('\n') ? ' …' : ''}`;
+  if (node.type === 'web') return String(node.config['url'] ?? '') || node.body.trim();
+  if (node.type === 'file') return String(node.config['path'] ?? '') || node.body.trim();
+  if (node.type === 'request') return `${String(node.config['method'] ?? 'GET')} ${String(node.config['url'] ?? '')}`.trim();
   if (node.type === 'skill') return node.body.trim() || `run "${node.name}"`;
   return node.body.trim() || (node.stages.length ? node.stages.map((stage) => stage.name).join(' → ') : '');
 }

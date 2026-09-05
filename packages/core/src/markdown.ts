@@ -18,19 +18,21 @@
  * hand edit is never destroyed by a re-save.
  */
 import {
+  NOTE_COLORS,
   SKILL_FORMAT,
   prettifyName,
   slugify,
   type ConfigValue,
   type Edge,
   type Note,
+  type NoteColor,
   type NodeType,
   type Position,
   type Skill,
   type SkillNode,
   type Stage,
 } from './model.js';
-import { NODE_META, asList, configKeys, outputHandles, typeFromKeyword, withCase } from './nodeTypes.js';
+import { NODE_META, TEXT_CHECK_RULE, asList, configKeys, fenceLanguage, outputHandles, typeFromKeyword, withCase } from './nodeTypes.js';
 import { normalizeRefs } from './refs.js';
 
 export interface Diagnostic {
@@ -52,7 +54,7 @@ const HEADING = /^##\s+(\d+)\.\s*(.*?)\s*$/;
 const STAGE_HEADING = /^###\s+(\d+)\.(\d+)\.?\s*(.*?)\s*$/;
 const CONFIG_LINE = /^[-*]\s+([^:]+?):\s*(.*?)\s*$/;
 const CASE_LINE = /^case\s+(?:"([^"]*)"|(.+?))$/;
-const NOTE_LINE = /^>\s*Note(?:\s*\(on\s+#?(\d+)\))?\s*:\s*(.*)$/i;
+const NOTE_LINE = /^>\s*Note(?:\s*\(([^)]*)\))?\s*:\s*(.*)$/i;
 const EDGE_HANDLES = new Set(['next', 'yes', 'no', 'default', 'fail']);
 
 // ---------------------------------------------------------------- parsing
@@ -234,10 +236,20 @@ function readNote(lines: string[], index: number): { note: Omit<Note, 'id'>; nex
     textLines.push(lines[next]!.replace(/^>\s?/, ''));
     next += 1;
   }
-  return {
-    note: { text: textLines.join('\n').trim(), attachedTo: first[1] ? Number(first[1]) : null },
-    nextIndex: next,
-  };
+  const { attachedTo, color } = readNoteAttributes(first[1] ?? '');
+  return { note: { text: textLines.join('\n').trim(), attachedTo, color }, nextIndex: next };
+}
+
+/** "(on 3, blue)" → attached node and colour, in either order; unknown words are ignored. */
+function readNoteAttributes(inner: string): { attachedTo: number | null; color: NoteColor | '' } {
+  let attachedTo: number | null = null;
+  let color: NoteColor | '' = '';
+  for (const token of inner.split(',').map((part) => part.trim().toLowerCase()).filter(Boolean)) {
+    const on = /^on\s+#?(\d+)$/.exec(token);
+    if (on) attachedTo = Number(on[1]);
+    else if ((NOTE_COLORS as readonly string[]).includes(token)) color = token as NoteColor;
+  }
+  return { attachedTo, color };
 }
 
 function readTitle(rest: string): { type: NodeType; name: string } {
@@ -346,6 +358,7 @@ function readSection(
   flushStage();
 
   node.body = unfence(node, bodyLines.join('\n').trim());
+  if (node.type === 'text') node.config['check'] = TEXT_CHECK_RULE;
   return { node, edges, notes };
 }
 
@@ -354,13 +367,16 @@ function readTarget(value: string): number | null {
   return match ? Number(match[1]) : null;
 }
 
-/** Code nodes store bare code; the fence is an encoding detail. */
+/** Fenced kinds (Code, Command) store the bare text; the fence is an encoding detail. */
 function unfence(node: SkillNode, body: string): string {
-  if (node.type !== 'code') return body;
+  if (!NODE_META[node.type].fence) return body;
   const match = /^```([\w+-]*)\s*\n([\s\S]*?)\n?```\s*$/.exec(body);
   if (!match) return body;
   const language = match[1]?.toLowerCase();
-  if (language && !node.config['language']) node.config['language'] = language === 'py' ? 'python' : language === 'js' ? 'javascript' : language;
+  if (language) {
+    if (node.type === 'code' && !node.config['language']) node.config['language'] = language === 'py' ? 'python' : language === 'js' ? 'javascript' : language;
+    if (node.type === 'command' && !node.config['shell']) node.config['shell'] = language;
+  }
   return match[2] ?? '';
 }
 
@@ -472,8 +488,8 @@ function serializeNode(skill: Skill, node: SkillNode): string[] {
   lines.push(isBareKeyword ? `## ${node.id}. ${meta.keyword}` : `## ${node.id}. ${meta.keyword}: ${node.name.trim()}`);
 
   for (const field of meta.fields) {
-    if (field.key === 'language') continue; // the code fence carries it
-    const value = node.config[field.key];
+    if (meta.fence && (field.key === 'language' || field.key === 'shell')) continue; // the fence carries it
+    const value = field.key === 'check' && node.type === 'text' ? TEXT_CHECK_RULE : node.config[field.key];
     if (value === undefined) continue;
     for (const item of Array.isArray(value) ? value : [value]) {
       if (item.trim() === '') continue;
@@ -483,9 +499,8 @@ function serializeNode(skill: Skill, node: SkillNode): string[] {
 
   const body = node.body.trim();
   if (meta.hasBody && body) {
-    if (node.type === 'code') {
-      const language = String(node.config['language'] ?? 'python');
-      lines.push('```' + language);
+    if (meta.fence) {
+      lines.push('```' + fenceLanguage(node));
       lines.push(body);
       lines.push('```');
     } else {
@@ -523,7 +538,8 @@ function edgeKey(handle: string): string {
 
 function serializeNote(note: Note): string[] {
   const textLines = note.text.split('\n');
-  const head = note.attachedTo === null ? `> Note: ${textLines[0] ?? ''}` : `> Note (on ${note.attachedTo}): ${textLines[0] ?? ''}`;
+  const attributes = [note.attachedTo === null ? '' : `on ${note.attachedTo}`, note.color && note.color !== NOTE_COLORS[0] ? note.color : ''].filter(Boolean);
+  const head = `> Note${attributes.length ? ` (${attributes.join(', ')})` : ''}: ${textLines[0] ?? ''}`;
   return [head, ...textLines.slice(1).map((line) => `> ${line}`)];
 }
 

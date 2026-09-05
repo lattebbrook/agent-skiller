@@ -28,16 +28,20 @@ export interface CodeEditorProps {
   autoFocus?: boolean;
 }
 
+/**
+ * Marks references. Nothing is added to the text flow — no pseudo-content —
+ * because CodeMirror measures cursor positions from the real characters, and
+ * anything extra in the line would push the caret off the text.
+ */
 function refDecorator(refNames: Record<number, string>) {
   const matcher = new MatchDecorator({
     regexp: /\$\{([^}]+)\}/g,
     decoration: (match) => {
       const ref = parseRef(match[1]!);
-      if (ref.keyword) return Decoration.mark({ class: 'cm-ref', attributes: { 'data-name': '' } });
+      if (ref.keyword) return Decoration.mark({ class: 'cm-ref', attributes: { title: 'What the caller passed to Start' } });
       const name = ref.nodeId === null ? undefined : refNames[ref.nodeId];
-      if (!name) return Decoration.mark({ class: 'cm-ref unknown', attributes: { 'data-name': 'unknown' } });
-      // A reference written as ${2: Open inbox} already names the node.
-      return Decoration.mark({ class: 'cm-ref', attributes: { 'data-name': ref.label ? '' : name } });
+      if (!name) return Decoration.mark({ class: 'cm-ref unknown', attributes: { title: 'No node with this id' } });
+      return Decoration.mark({ class: 'cm-ref', attributes: { title: `Result of step ${ref.nodeId}: ${name}` } });
     },
   });
   return ViewPlugin.fromClass(
@@ -102,7 +106,17 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function
         EditorView.updateListener.of((update) => {
           if (update.docChanged) onChangeRef.current(update.state.doc.toString());
         }),
-        EditorView.theme({ '&': { minHeight: `${minHeight}px`, maxHeight: `${maxHeight}px` }, '.cm-scroller': { overflow: 'auto' } }),
+        EditorView.theme({
+          '&': { minHeight: `${minHeight}px`, maxHeight: `${maxHeight}px` },
+          '.cm-scroller': { overflow: 'auto', fontFamily: 'inherit', lineHeight: '1.55' },
+          // The default theme paints a black caret, invisible on a dark page; use the text colour in both modes.
+          '.cm-content': { caretColor: 'var(--text)', padding: '8px 0' },
+          '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--text)', borderLeftWidth: '1.5px' },
+          '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection': {
+            backgroundColor: 'var(--accent-soft)',
+          },
+          '.cm-activeLine': { backgroundColor: 'transparent' },
+        }),
         EditorView.editorAttributes.of({ class: isCode ? '' : 'prose' }),
       ],
     });

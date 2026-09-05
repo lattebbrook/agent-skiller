@@ -1,5 +1,5 @@
 import { NODE_META, asList, asText, type ConfigValue, type SkillNode } from '@agent-skiller/core';
-import { Plus, X } from 'lucide-react';
+import { Lock, Plus, X } from 'lucide-react';
 
 /**
  * The few settings a node can have. Only Start (when / input) and Code
@@ -21,7 +21,20 @@ export function ConfigFields({ node, onChange }: { node: SkillNode; onChange: (c
               </span>
             )}
           </div>
-          {field.key === 'language' ? (
+          {field.locked ? (
+            <div className="field locked flex items-center gap-2" title={field.help}>
+              <Lock size={12} />
+              <span className="truncate">{asText(node.config[field.key])}</span>
+            </div>
+          ) : field.key === 'shell' ? (
+            <select className="field" value={asText(node.config['shell']) || 'sh'} onChange={(event) => set('shell', event.target.value)}>
+              {['sh', 'bash', 'zsh', 'powershell', 'cmd'].map((shell) => (
+                <option key={shell} value={shell}>
+                  {shell}
+                </option>
+              ))}
+            </select>
+          ) : field.key === 'language' ? (
             <select className="field" value={asText(node.config['language']) || 'python'} onChange={(event) => set('language', event.target.value)}>
               <option value="python">python</option>
               <option value="javascript">javascript</option>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { NODE_META, PALETTE, type PaletteEntry } from '@agent-skiller/core';
+import { NODE_GROUPS, NODE_META, PALETTE, type PaletteEntry } from '@agent-skiller/core';
 import { NodeIcon, NOTE_ICON as NoteIcon } from './nodeIcons.js';
 
 export type PickerChoice = { kind: 'node'; entry: PaletteEntry } | { kind: 'note' };
@@ -67,11 +67,17 @@ export function NodePicker({ at, onPick, onClose, includeStart }: { at: { x: num
         <div className="scroll" style={{ maxHeight: 300 }}>
           {entries.map((choice, position) => {
             const active = position === index;
+            const previous = entries[position - 1];
+            const groupId = choice.kind === 'note' ? 'notes' : choice.entry.group;
+            const previousGroup = !previous ? null : previous.kind === 'note' ? 'notes' : previous.entry.group;
+            const groupLabel = groupId === 'notes' ? 'Notes' : NODE_GROUPS.find((group) => group.id === groupId)?.label;
+            const showGroup = !query.trim() && groupId !== previousGroup;
             const label = choice.kind === 'note' ? 'Note' : choice.entry.label;
             const description = choice.kind === 'note' ? 'A sticky note for humans reading the skill.' : choice.entry.description;
             return (
+              <div key={label}>
+                {showGroup && <div className="picker-group">{groupLabel}</div>}
               <button
-                key={label}
                 className="w-full text-left px-3 py-2 flex items-center gap-3"
                 style={{ background: active ? 'var(--accent-soft)' : 'transparent' }}
                 onMouseEnter={() => setIndex(position)}
@@ -91,6 +97,7 @@ export function NodePicker({ at, onPick, onClose, includeStart }: { at: { x: num
                   </span>
                 </span>
               </button>
+              </div>
             );
           })}
           {entries.length === 0 && (

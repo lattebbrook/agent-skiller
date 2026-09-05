@@ -5,7 +5,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { NODE_META, NODE_TYPES, asList, asText, makeRef, serializeNodeMarkdown, type ConfigValue, type NodeType, type SkillNode, type Stage } from '@agent-skiller/core';
-import { ChevronDown, ChevronRight, Play, Trash2, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Play, Trash2, TriangleAlert, X } from 'lucide-react';
 import { api, type SandboxResult } from '../api.js';
 import { problemsFor, useSkillStore } from '../store/skillStore.js';
 import { upstreamNodes } from '../store/skillOps.js';
@@ -42,7 +42,8 @@ export function NodeDrawer() {
   if (!skill || !node) return null;
   const meta = NODE_META[node.type];
   const own = problemsFor(problems, node.id);
-  const language = node.type === 'code' ? (asText(node.config['language']) === 'javascript' ? 'javascript' : 'python') : 'markdown';
+  const language: 'python' | 'javascript' | 'markdown' | 'plain' =
+    node.type === 'code' ? (asText(node.config['language']) === 'javascript' ? 'javascript' : 'python') : node.type === 'command' ? 'plain' : 'markdown';
 
   const insertRef = (id: number, name: string) => editor.current?.insert(makeRef(id, name));
   const patch = (changes: Partial<Omit<SkillNode, 'id'>>) => updateNode(node.id, changes);
@@ -121,6 +122,13 @@ export function NodeDrawer() {
           </div>
         )}
 
+        {meta.caution && (
+          <div className="caution" role="note">
+            <TriangleAlert size={15} className="shrink-0" style={{ marginTop: 1 }} />
+            <span>{meta.caution}</span>
+          </div>
+        )}
+
         {meta.hasBody && (
           <div>
             <div className="flex items-center justify-between mb-1">
@@ -161,7 +169,7 @@ export function NodeDrawer() {
           </div>
         )}
 
-        {meta.hasBody && node.type !== 'code' && (
+        {meta.hasBody && !meta.fence && (
           <div>
             <div className="flex items-center justify-between mb-1">
               <span className="section-title" style={{ marginBottom: 0 }}>Stages</span>
