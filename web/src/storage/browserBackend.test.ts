@@ -98,4 +98,12 @@ describe('BrowserBackend', () => {
       { path: 'f/b.md', markdown: 'y' },
     ]);
   });
+
+  it('removes a folder and everything under it', async () => {
+    await backend.write('f/b.md', 'y');
+    await backend.mkdir('f/deep');
+    await backend.rmdir('f');
+    expect(await backend.tree()).toEqual([]);
+    await expect(backend.rmdir('f')).rejects.toThrow();
+  });
 });

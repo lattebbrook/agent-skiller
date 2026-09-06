@@ -117,6 +117,7 @@ export const api = {
   createFile: (name: string, folder = '', skill?: Skill) => call<{ path: string; mtime: number }>('POST', '/api/files/create', { name, folder, skill }),
   createRaw: (path: string, markdown: string) => call<{ path: string; mtime: number }>('POST', '/api/files/create', { path, markdown }),
   createFolder: (path: string) => call<{ path: string }>('POST', '/api/folders', { path }),
+  deleteFolder: (path: string) => call<{ ok: boolean }>('POST', '/api/folders/delete', { path }),
   moveFile: (from: string, to: string) => call<{ path: string }>('POST', '/api/files/move', { from, to }),
   duplicateFile: (path: string) => call<{ path: string }>('POST', '/api/files/duplicate', { path }),
   trashFile: (path: string) => call<TrashEntry>('POST', '/api/files/trash', { path }),

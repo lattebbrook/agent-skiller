@@ -38,6 +38,8 @@ export interface WorkspaceBackend {
   /** Creates at a unique path derived from the one given. */
   create(path: string, markdown: string): Promise<{ path: string; mtime: number }>;
   mkdir(path: string): Promise<void>;
+  /** Removes a folder and anything still inside it. Files are trashed first by the caller. */
+  rmdir(path: string): Promise<void>;
   move(from: string, to: string): Promise<{ path: string }>;
   duplicate(path: string): Promise<{ path: string }>;
   trash(path: string): Promise<TrashEntry>;

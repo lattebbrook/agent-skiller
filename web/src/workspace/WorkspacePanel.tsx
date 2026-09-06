@@ -24,6 +24,7 @@ export function WorkspacePanel() {
   const [rootDragOver, setRootDragOver] = useState(false);
   const [query, setQuery] = useState('');
   const [menu, setMenu] = useState<{ screen: { x: number; y: number }; items: MenuItem[] } | null>(null);
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
 
   const guard = async (action: () => Promise<unknown>) => {
     try {
@@ -38,6 +39,25 @@ export function WorkspacePanel() {
     const items = await Promise.all([...files].map(async (file) => ({ name: file.name, text: await file.text() })));
     await guard(() => workspace.importFiles(items));
     toast.show(`Imported ${items.length} file${items.length > 1 ? 's' : ''}.`);
+  };
+
+  // The toolbar's trash acts on whatever the tree has highlighted: the open
+  // skill, or the folder last clicked. Folders warn first; files are restorable.
+  const selected = useMemo(() => findEntry(tree, selectedPath ?? currentPath ?? ''), [tree, selectedPath, currentPath]);
+  const deleteTitle = !selected ? 'Nothing selected' : selected.type === 'folder' ? `Delete folder "${selected.name}"…` : `Move "${selected.name}" to trash`;
+
+  const deleteSelected = () => {
+    if (!selected) return;
+    if (selected.type === 'folder') {
+      confirmDeleteFolder(selected, workspace, guard, toast);
+      setSelectedPath(null);
+      return;
+    }
+    void guard(async () => {
+      await workspace.trashFile(selected.path);
+      setSelectedPath(null);
+      toast.show(`"${selected.name}" moved to the trash.`);
+    });
   };
 
   const visible = useMemo(() => filterTree(tree, query.trim().toLowerCase()), [tree, query]);
@@ -61,6 +81,9 @@ export function WorkspacePanel() {
           }}
         >
           <FolderPlus size={15} />
+        </button>
+        <button className="btn icon danger" title={deleteTitle} disabled={!selected} onClick={deleteSelected}>
+          <Trash2 size={15} />
         </button>
         <button className="btn icon" title="Import .md or .json" onClick={() => fileInput.current?.click()}>
           <Upload size={15} />
@@ -103,7 +126,7 @@ export function WorkspacePanel() {
           </p>
         )}
         {visible.map((entry) => (
-          <TreeRow key={entry.path} entry={entry} depth={0} currentPath={currentPath} guard={guard} forceOpen={query.length > 0} onMenu={setMenu} />
+          <TreeRow key={entry.path} entry={entry} depth={0} currentPath={currentPath} guard={guard} forceOpen={query.length > 0} onMenu={setMenu} onSelect={setSelectedPath} selectedPath={selectedPath} />
         ))}
       </div>
 
@@ -189,6 +212,32 @@ function fileMenuItems(path: string, workspace: Workspace, guard: Guard, rename:
   ];
 }
 
+/** The confirm-then-delete used by the toolbar button and the folder menu. */
+function confirmDeleteFolder(entry: TreeEntry, workspace: Workspace, guard: Guard, toast: ReturnType<typeof useToast>): void {
+  const count = countFiles(entry);
+  const what = count === 0 ? 'It is empty.' : `${count} skill${count > 1 ? 's' : ''} inside will be moved to the trash.`;
+  if (!window.confirm(`Delete the folder "${entry.name}"?\n\n${what} The folder itself is gone for good.`)) return;
+  void guard(async () => {
+    const trashed = await workspace.deleteFolder(entry.path);
+    toast.show(trashed === 0 ? `Deleted "${entry.name}".` : `Deleted "${entry.name}"; ${trashed} skill${trashed > 1 ? 's' : ''} moved to the trash.`);
+  });
+}
+
+/** Finds any entry by path. */
+function findEntry(entries: TreeEntry[], path: string): TreeEntry | null {
+  for (const entry of entries) {
+    if (entry.path === path) return entry;
+    const found = findEntry(entry.children ?? [], path);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Skills inside a folder, at any depth. */
+function countFiles(entry: TreeEntry): number {
+  return (entry.children ?? []).reduce((total, child) => total + (child.type === 'folder' ? countFiles(child) : 1), 0);
+}
+
 function filterTree(entries: TreeEntry[], query: string): TreeEntry[] {
   if (!query) return entries;
   return entries.flatMap((entry) => {
@@ -205,6 +254,8 @@ function TreeRow({
   guard,
   forceOpen,
   onMenu,
+  onSelect,
+  selectedPath,
 }: {
   entry: TreeEntry;
   depth: number;
@@ -212,12 +263,16 @@ function TreeRow({
   guard: Guard;
   forceOpen: boolean;
   onMenu: (menu: { screen: { x: number; y: number }; items: MenuItem[] }) => void;
+  onSelect: (path: string) => void;
+  selectedPath: string | null;
 }) {
   const workspace = useWorkspaceStore();
+  const toast = useToast();
   const expanded = useWorkspaceStore((state) => state.expanded[entry.path] ?? true) || forceOpen;
   const [dragOver, setDragOver] = useState(false);
   const isFolder = entry.type === 'folder';
   const active = entry.path === currentPath;
+  const selected = entry.path === selectedPath && !active;
 
   const rename = () => {
     const base = entry.name.replace(/\.(md|json)$/i, '');
@@ -225,6 +280,8 @@ function TreeRow({
     if (!name || name === base) return;
     void guard(() => (isFolder ? workspace.renameFolder(entry.path, name) : workspace.rename(entry.path, name)));
   };
+
+  const deleteFolder = () => confirmDeleteFolder(entry, workspace, guard, toast);
 
   const openMenu = (event: React.MouseEvent) => {
     event.preventDefault();
@@ -236,6 +293,7 @@ function TreeRow({
         items: [
           ...folderMenuItems(entry.path, workspace, guard),
           { id: 'renameFolder', label: 'Rename…', icon: <Pencil size={14} />, run: rename },
+          { id: 'deleteFolder', label: 'Delete folder…', icon: <Trash2 size={14} />, danger: true, run: deleteFolder },
         ],
       });
       return;
@@ -246,7 +304,7 @@ function TreeRow({
   return (
     <div>
       <div
-        className={`tree-row ${active ? 'active' : ''} ${dragOver ? 'dragover' : ''}`}
+        className={`tree-row ${active ? 'active' : ''} ${selected ? 'selected' : ''} ${dragOver ? 'dragover' : ''}`}
         style={{ paddingLeft: 6 + depth * 14 }}
         draggable={!isFolder}
         onDragStart={(event) => {
@@ -270,8 +328,15 @@ function TreeRow({
             void guard(() => workspace.move(path, entry.path));
           }
         }}
-        onClick={() => (isFolder ? workspace.toggleExpanded(entry.path) : void guard(() => workspace.openFile(entry.path)))}
-        onContextMenu={openMenu}
+        onClick={() => {
+          onSelect(entry.path);
+          if (isFolder) workspace.toggleExpanded(entry.path);
+          else void guard(() => workspace.openFile(entry.path));
+        }}
+        onContextMenu={(event) => {
+          onSelect(entry.path);
+          openMenu(event);
+        }}
         title={entry.path}
       >
         {isFolder ? (
@@ -306,9 +371,19 @@ function TreeRow({
               <FilePlus2 size={12} />
             </button>
           )}
+          {isFolder && (
+            <button title="Rename" onClick={(event) => { event.stopPropagation(); rename(); }}>
+              <Pencil size={12} />
+            </button>
+          )}
+          {isFolder && (
+            <button className="danger" title="Delete folder" onClick={(event) => { event.stopPropagation(); deleteFolder(); }}>
+              <Trash2 size={12} />
+            </button>
+          )}
         </span>
       </div>
-      {isFolder && expanded && entry.children?.map((child) => <TreeRow key={child.path} entry={child} depth={depth + 1} currentPath={currentPath} guard={guard} forceOpen={forceOpen} onMenu={onMenu} />)}
+      {isFolder && expanded && entry.children?.map((child) => <TreeRow key={child.path} entry={child} depth={depth + 1} currentPath={currentPath} guard={guard} forceOpen={forceOpen} onMenu={onMenu} onSelect={onSelect} selectedPath={selectedPath} />)}
     </div>
   );
 }

@@ -42,6 +42,10 @@ export class ServerBackend implements WorkspaceBackend {
     await api.createFolder(path);
   }
 
+  async rmdir(path: string): Promise<void> {
+    await api.deleteFolder(path);
+  }
+
   async move(from: string, to: string): Promise<{ path: string }> {
     return api.moveFile(from, to);
   }

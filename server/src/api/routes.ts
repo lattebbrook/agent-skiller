@@ -149,6 +149,12 @@ export function registerApiRoutes(app: FastifyInstance, deps: ApiDeps): void {
     return { path };
   });
 
+  app.post('/api/folders/delete', async (request) => {
+    const { path } = z.object({ path: pathSchema }).parse(request.body);
+    await files.rmdir(path);
+    return { ok: true };
+  });
+
   app.post('/api/files/move', async (request) => {
     const { from, to } = z.object({ from: pathSchema, to: pathSchema }).parse(request.body);
     return files.move(from, to);

@@ -718,6 +718,11 @@ textarea.field {
   background: var(--accent-soft);
   color: var(--accent);
 }
+/* What the toolbar acts on, when that is not the open skill: quieter than active. */
+.tree-row.selected {
+  background: var(--panel-2);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
 .tree-row.dragover {
   outline: 1px dashed var(--accent);
   outline-offset: -1px;

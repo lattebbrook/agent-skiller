@@ -21,6 +21,7 @@ import {
   type WorkspaceBackend,
 } from '../storage/index.js';
 import { BrowserBackend } from '../storage/browserBackend.js';
+import { EXAMPLE_FILES } from '../storage/seed.js';
 
 const LAST_PATH_KEY = 'skiller.lastPath';
 const EXPANDED_KEY = 'skiller.expanded';
@@ -62,10 +63,13 @@ export interface WorkspaceStore {
   rename: (path: string, newName: string) => Promise<void>;
   renameFolder: (path: string, newName: string) => Promise<void>;
   trashFile: (path: string) => Promise<void>;
+  /** Trashes every skill inside a folder, then removes the folder. Returns how many were trashed. */
+  deleteFolder: (path: string) => Promise<number>;
   restore: (id: string) => Promise<void>;
   deleteForever: (id: string) => Promise<void>;
   importFiles: (files: { name: string; text: string }[], folder?: string) => Promise<string[]>;
   exportAll: () => Promise<Bundle>;
+  loadExamples: () => Promise<number>;
   importBundle: (bundle: Bundle) => Promise<number>;
   copyFile: (path: string, cut?: boolean) => void;
   pasteInto: (folder: string) => Promise<void>;
@@ -88,6 +92,21 @@ function remember(key: string, value: string | null): void {
   } catch {
     // Storage may be unavailable; the app still works.
   }
+}
+
+function findFolder(entries: TreeEntry[], path: string): TreeEntry | null {
+  for (const entry of entries) {
+    if (entry.type !== 'folder') continue;
+    if (entry.path === path) return entry;
+    const found = findFolder(entry.children ?? [], path);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Every file path inside a folder, at any depth. */
+function filesUnder(folder: TreeEntry): string[] {
+  return (folder.children ?? []).flatMap((child) => (child.type === 'folder' ? filesUnder(child) : [child.path]));
 }
 
 async function readSkillFile(backend: WorkspaceBackend, path: string): Promise<{ skill: Skill; mtime: number }> {
@@ -276,6 +295,26 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     await get().refresh();
   },
 
+  deleteFolder: async (path) => {
+    const backend = get().backend;
+    if (!backend) return 0;
+    const folder = findFolder(get().tree, path);
+    const files = folder ? filesUnder(folder) : [];
+    const openPath = useSkillStore.getState().path;
+    for (const file of files) await backend.trash(file);
+    await backend.rmdir(path);
+    if (openPath && (openPath === path || openPath.startsWith(`${path}/`))) {
+      useSkillStore.getState().close();
+      remember(LAST_PATH_KEY, null);
+    }
+    const expanded = { ...get().expanded };
+    for (const key of Object.keys(expanded)) if (key === path || key.startsWith(`${path}/`)) delete expanded[key];
+    set({ expanded });
+    remember(EXPANDED_KEY, JSON.stringify(expanded));
+    await get().refresh();
+    return files.length;
+  },
+
   restore: async (id) => {
     const backend = get().backend;
     if (!backend) return;
@@ -317,6 +356,22 @@ export const useWorkspaceStore = create<WorkspaceStore>((set, get) => ({
     const last = opened[opened.length - 1];
     if (last) await get().openFile(last);
     return opened;
+  },
+
+  /** Drops the bundled example skills into the current workspace, without touching what is already there. */
+  loadExamples: async () => {
+    const backend = get().backend;
+    if (!backend) throw new Error('Storage is not ready yet.');
+    const created: string[] = [];
+    for (const file of EXAMPLE_FILES) {
+      const made = await backend.create(file.path, file.markdown);
+      created.push(made.path);
+    }
+    await get().refresh();
+    set({ expanded: { ...get().expanded, Example: true } });
+    const first = created[0];
+    if (first) await get().openFile(first).catch(() => undefined);
+    return created.length;
   },
 
   exportAll: async () => {

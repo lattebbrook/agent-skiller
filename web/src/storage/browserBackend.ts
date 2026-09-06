@@ -91,6 +91,16 @@ export class BrowserBackend implements WorkspaceBackend {
     }
   }
 
+  async rmdir(path: string): Promise<void> {
+    const folder = paths.normalize(path);
+    if (!folder) throw new StorageError('The workspace root cannot be deleted.');
+    if ((await this.kv.get(`folder:${folder}`)) === undefined) throw new StorageError(`No folder at ${path}.`, 404);
+    for (const prefix of [`file:${folder}/`, `folder:${folder}/`]) {
+      for (const key of await this.kv.keys(prefix)) await this.kv.delete(key);
+    }
+    await this.kv.delete(`folder:${folder}`);
+  }
+
   async move(from: string, to: string): Promise<{ path: string }> {
     const source = paths.normalize(from);
     const isFolder = (await this.kv.get(`folder:${source}`)) !== undefined;

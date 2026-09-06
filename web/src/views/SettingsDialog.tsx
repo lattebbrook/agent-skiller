@@ -4,7 +4,7 @@
  * comes back to the page, so this only ever shows whether one is set.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Copy, Download, Eye, EyeOff, FolderOpen, HardDrive, Loader2, RefreshCw, Server, Upload, X } from 'lucide-react';
+import { Check, Copy, Download, Eye, EyeOff, FolderOpen, HardDrive, Loader2, RefreshCw, Server, Sparkles, Upload, X } from 'lucide-react';
 import { NODE_META, SKILL_FORMAT } from '@agent-skiller/core';
 import { api, type ModelOption } from '../api.js';
 import { ai as aiClient, type SettingsView } from '../ai.js';
@@ -292,6 +292,18 @@ function StorageSection({ toast }: { toast: ReturnType<typeof useToast> }) {
     });
   };
 
+  const loadExamples = async () => {
+    setBusy(true);
+    try {
+      const count = await workspace.loadExamples();
+      toast.show(`${count} example skills added.`);
+    } catch (error) {
+      toast.show((error as Error).message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const options: { kind: 'server' | 'browser' | 'folder'; icon: typeof Server; title: string; body: string; available: boolean; action: () => Promise<unknown>; note?: string }[] = [
     {
       kind: 'server',
@@ -358,6 +370,16 @@ function StorageSection({ toast }: { toast: ReturnType<typeof useToast> }) {
             </div>
           );
         })}
+      </div>
+
+      <div>
+        <span className="section-title block">Examples</span>
+        <button className="btn outline" disabled={busy} onClick={loadExamples}>
+          <Sparkles size={14} /> Load example pack
+        </button>
+        <p className="muted-text mt-1">
+          Puts the four sample skills into an <code>Example</code> folder here. Handy after linking a folder or switching storage, since switching copies nothing across.
+        </p>
       </div>
 
       <div>

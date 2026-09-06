@@ -121,6 +121,15 @@ export class FileStore {
     await fs.mkdir(this.resolve(relativePath), { recursive: true });
   }
 
+  /** Removes a folder and whatever is left inside it. Callers trash the files first. */
+  async rmdir(relativePath: string): Promise<void> {
+    if (!relativePath.trim()) throw new WorkspaceError('The workspace root cannot be deleted.');
+    const absolute = this.resolve(relativePath);
+    const stat = await fs.stat(absolute).catch(() => null);
+    if (!stat?.isDirectory()) throw new WorkspaceError(`No folder at ${relativePath}.`, 404);
+    await fs.rm(absolute, { recursive: true, force: true });
+  }
+
   async move(from: string, to: string): Promise<{ path: string }> {
     const source = this.resolve(from);
     if (!(await this.exists(from))) throw new WorkspaceError(`No file at ${from}.`, 404);

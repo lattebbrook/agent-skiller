@@ -145,6 +145,13 @@ export class FolderBackend implements WorkspaceBackend {
     await this.dir(paths.normalize(path), true);
   }
 
+  async rmdir(path: string): Promise<void> {
+    const folder = paths.normalize(path);
+    if (!folder) throw new StorageError('The workspace root cannot be deleted.');
+    const parent = await this.dir(paths.parent(folder));
+    await parent.removeEntry(paths.base(folder), { recursive: true });
+  }
+
   async move(from: string, to: string): Promise<{ path: string }> {
     const source = paths.normalize(from);
     let isFolder = false;

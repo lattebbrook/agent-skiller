@@ -9,10 +9,10 @@ async function seedExamples(): Promise<void> {
   const existing = (await fs.readdir(config.workspaceDir)).filter((name) => !name.startsWith('.'));
   if (existing.length > 0) return;
   const examples = await fs.readdir(config.examplesDir).catch(() => [] as string[]);
-  await fs.mkdir(join(config.workspaceDir, 'examples'), { recursive: true });
+  await fs.mkdir(join(config.workspaceDir, 'Example'), { recursive: true });
   for (const name of examples) {
     if (!name.endsWith('.md')) continue;
-    await fs.copyFile(join(config.examplesDir, name), join(config.workspaceDir, 'examples', name));
+    await fs.copyFile(join(config.examplesDir, name), join(config.workspaceDir, 'Example', name));
   }
 }
 
